@@ -1,0 +1,1 @@
+web: gunicorn generaitor_ml_api.wsgi --log-file -

@@ -32,7 +32,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'summarizer.apps.SummarizerConfig',
+    'django.contrib.admin',
+    'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
 ]
 
 MIDDLEWARE = [
@@ -72,7 +76,12 @@ WSGI_APPLICATION = 'generaitor_ml_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgresql-shaped-57652',
+        # 'NAME': 'postgresql-shaped-57652',
+        'NAME': 'generaitor-ml-api-dev',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
 

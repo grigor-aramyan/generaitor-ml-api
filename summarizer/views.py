@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django import utils
 
+import os
+
 import json
 
 import jwt
@@ -22,6 +24,113 @@ armenian_stopwords = ['այդ','այլ','այն','այս','դու','դուք','�
 
 # Create your views here.
 
+def feedback_sum(request):
+    if request.method == 'POST':
+        secret = os.environ.get('TOKEN_SECRET', '')
+        try:
+            token = request.headers['Authorization'].split()[1]
+            decoded_jwt = jwt.decode(token, secret, options={'verify_aud': False}, algorithms=['HS256'])
+        except:
+            return JsonResponse({
+                'msg': 'Unauthorized'
+            }, status=401)
+
+        body_unicode = request.body.decode('utf-8')
+        body_data = json.loads(body_unicode)
+
+        feedback = body_data['feedback']
+        feedback_lang, _ = langid.classify(feedback['content'])
+
+        feedback_sums = FeedbacksSum.objects.all()
+        feedback_sum_created = False
+        for fs in feedback_sums:
+            first_id = int(fs.feedback_ids.split(':::')[0])
+            presentable_feedback = Feedback.objects.get(id=first_id)
+
+            feedback_sum_lang, _ = langid.classify(fs.summary)
+            
+            if (presentable_feedback.organization_name == feedback['organization_name']
+                and presentable_feedback.for_product == feedback['for_product']
+                and presentable_feedback.product_id == feedback['product_id']
+                and presentable_feedback.branch_address == feedback['branch_address']
+                and presentable_feedback.sentiment == feedback['sentiment']
+                and feedback_sum_lang == feedback_lang):
+                
+                feedback_sum_created = True
+
+                new_summary = _create_summary(fs.feedback_all, feedback['content'], feedback_lang)
+                fs.summary = new_summary
+                fs.feedback_all = fs.feedback_all + ' ' + feedback['content']
+                fs.feedback_ids = fs.feedback_ids + str(feedback['id']) + ':::'
+                fs.update_date = utils.timezone.now()
+
+                fs.save()
+
+                kws = ''
+                for kw in feedback['keywords']:
+                    kws = kws + kw + ':::'
+
+                f = Feedback(id=feedback['id'],
+                    organization_name=feedback['organization_name'],
+                    for_product=feedback['for_product'],
+                    product_id=feedback['product_id'],
+                    branch_address=feedback['branch_address'],
+                    sentiment=feedback['sentiment'],
+                    keywords=kws,
+                    content=feedback['content'],
+                    feedback_sum=fs)
+
+                f.save()
+
+                data = {
+                    'id': fs.id,
+                    'feedback_ids': fs.feedback_ids,
+                    'feedback_all': fs.feedback_all,
+                    'summary': fs.summary
+                }
+
+                return JsonResponse({
+                    'data': data
+                })
+
+        if not feedback_sum_created:
+            new_summary = _create_summary('', feedback['content'], feedback_lang)
+            fs = FeedbacksSum(feedback_ids=str(feedback['id']) + ':::',
+                feedback_all=feedback['content'],
+                summary=new_summary)
+            fs.save()
+
+
+            kws = ''
+            for kw in feedback['keywords']:
+                kws = kws + kw + ':::'
+
+            f = Feedback(id=feedback['id'],
+                organization_name=feedback['organization_name'],
+                for_product=feedback['for_product'],
+                product_id=feedback['product_id'],
+                branch_address=feedback['branch_address'],
+                sentiment=feedback['sentiment'],
+                keywords=kws,
+                content=feedback['content'],
+                feedback_sum=fs)
+
+            f.save()
+
+            data = {
+                'id': fs.id,
+                'feedback_ids': fs.feedback_ids,
+                'feedback_all': fs.feedback_all,
+                'summary': fs.summary
+            }
+
+            return JsonResponse({
+                'data': data
+            })
+    else:
+        return JsonResponse({
+            'msg': 'No route identified'
+        }, status=400)
 
 
 def _create_summary(merged_feedbacks, new_feedback, lang):

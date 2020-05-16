@@ -2,3 +2,7 @@ django
 gunicorn
 django-heroku
 psycopg2
+json
+jwt
+langid
+nltk

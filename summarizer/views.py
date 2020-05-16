@@ -126,7 +126,7 @@ def feedback_sum(request):
 
             return JsonResponse({
                 'data': data
-            })
+            }, status=201)
     else:
         return JsonResponse({
             'msg': 'No route identified'

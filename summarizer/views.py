@@ -133,6 +133,38 @@ def feedback_sum(request):
         }, status=400)
 
 
+def delete_feedback_sum(request, id):
+    if request.method == 'DELETE':
+        secret = os.environ.get('TOKEN_SECRET', '')
+        try:
+            token = request.headers['Authorization'].split()[1]
+            decoded_jwt = jwt.decode(token, secret, options={'verify_aud': False}, algorithms=['HS256'])
+        except:
+            return JsonResponse({
+                'msg': 'Unauthorized'
+            }, status=401)
+
+        fs_list = FeedbacksSum.objects.filter(id=id)
+
+        if len(fs_list) > 0:
+            fs = fs_list[0]
+            fs.delete()
+
+            return JsonResponse({
+                'id': id,
+                'msg': 'deleted'
+            })
+        else:
+            return JsonResponse({
+                'id': id,
+                'msg': 'not found'
+            }, status=404)
+    else:
+        return JsonResponse({
+            'msg': 'No route identified'
+        }, status=400)
+
+
 def _create_summary(merged_feedbacks, new_feedback, lang):
 
     if lang == 'en':

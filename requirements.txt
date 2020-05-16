@@ -2,7 +2,6 @@ django
 gunicorn
 django-heroku
 psycopg2
-json
-jwt
+pyjwt
 langid
 nltk
